@@ -26,7 +26,7 @@ class UserController extends Controller {
         $user = User::create([
             'username' => $request->username,
             'email' => $request->email,
-            'password' => bcrypt($request->password),
+            'password' => $request->password,
             'sexe' => $request->sexe,
             'activation_token' => Str::random(60)
         ]);
@@ -65,6 +65,11 @@ class UserController extends Controller {
     }
 
     public function login(Request $request) {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
         $credentials = $request->only('email', 'password');
         if (!Auth::attempt($credentials)) {
             return response()->json(['message' => 'Identifiants invalides'], 401);
@@ -78,5 +83,51 @@ class UserController extends Controller {
     public function logout() {
         Auth::user()->tokens()->delete();
         return response()->json(['message' => 'Déconnexion réussie']);
+    }
+
+    public function updatePassword(Request $request) {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:6|confirmed'
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json(['message' => 'Mot de passe actuel incorrect'], 400);
+        }
+
+        $user->update(['password' => $request->new_password]);
+
+        return response()->json(['message' => 'Mot de passe mis à jour']);
+    }
+
+    public function updateProfileImage(Request $request) {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        $user = Auth::user();
+
+        try {
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $imageName = time() . '.' . $image->getClientOriginalExtension();
+                $image->move(public_path('images/profile'), $imageName);
+
+                if ($user->image && $user->image !== 'default.png') {
+                    $oldImagePath = public_path('images/profile/' . $user->image);
+                    if (file_exists($oldImagePath)) {
+                        unlink($oldImagePath);
+                    }
+                }
+
+                $user->update(['image' => $imageName]);
+            }
+
+            return response()->json(['message' => 'Photo de profil mise à jour', 'user' => $user]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur lors de la mise à jour de la photo de profil', 'error' => $e->getMessage()], 500);
+        }
     }
 }

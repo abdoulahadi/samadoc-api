@@ -12,14 +12,16 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 
-Route::apiResource('users', UserController::class);
-
 Route::post('/login', [UserController::class, 'login']);
+Route::post("/register", [UserController::class, 'store']);
 Route::get('/activate/{token}', [UserController::class, 'activate']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [UserController::class, 'logout']);
+    Route::apiResource('users', UserController::class)->except("store");
+    Route::post('/update-password', [UserController::class, 'updatePassword']);
+    Route::post('/update-profile-image', [UserController::class, 'updateProfileImage']);
 });
 
 
