@@ -43,4 +43,26 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function sharedDirectories()
+    {
+        return $this->belongsToMany(Directory::class, 'shares', 'recipient_id', 'rep_id')->withPivot('accepted', 'shared_at');
+    }
+
+    public function ownedDirectories()
+    {
+        return $this->belongsToMany(Directory::class, 'shares', 'owner_id', 'rep_id')->withPivot('accepted', 'shared_at');
+    }
+
+    public function sharesReceived()
+    {
+        return $this->hasMany(Share::class, 'recipient_id');
+    }
+
+    public function sharesGiven()
+    {
+        return $this->hasMany(Share::class, 'owner_id');
+    }
+
+
 }

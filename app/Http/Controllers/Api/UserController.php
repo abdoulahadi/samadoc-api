@@ -130,4 +130,19 @@ class UserController extends Controller {
             return response()->json(['message' => 'Erreur lors de la mise à jour de la photo de profil', 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function searchUsersByUsername(Request $request) {
+        $request->validate([
+            'query' => 'required|string|min:1'
+        ]);
+
+        $query = $request->query('query');
+        $users = User::where('username', 'LIKE', '%' . $query . '%')
+                     ->select('id', 'username', 'email', 'image')
+                     ->limit(10)
+                     ->get();
+
+        return response()->json($users);
+    }
+    
 }

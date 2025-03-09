@@ -11,7 +11,18 @@ class Directory extends Model
 
     protected $fillable = ['rep_name', 'level', 'description', 'shared', 'user_id'];
 
-    public function user() {
-        return $this->belongsTo(User::class);
-    }
+    public function sharedWithUsers()
+{
+    return $this->belongsToMany(User::class, 'shares', 'rep_id', 'recipient_id')->withPivot('accepted', 'shared_at');
+}
+
+public function owner()
+{
+    return $this->belongsToMany(User::class, 'shares', 'rep_id', 'owner_id')->withPivot('accepted', 'shared_at');
+}
+
+public function documents()
+{
+    return $this->hasMany(Document::class, 'rep_id');
+}
 }
