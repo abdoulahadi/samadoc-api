@@ -128,4 +128,22 @@ class DirectoryController extends Controller {
             return response()->json(['error' => 'An error occurred while searching for directories'], 500);
         }
     }
+
+    public function getCollaborators($rep_id) {
+        try {
+            $directory = Directory::findOrFail($rep_id);
+    
+            // Vérifie si l'utilisateur connecté est le propriétaire
+            if ($directory->user_id !== Auth::id()) {
+                return response()->json(['message' => 'Accès refusé'], 403);
+            }
+    
+            $collaborators = $directory->sharedWithUsers()->get(['id', 'username', 'email', 'image']);
+    
+            return response()->json($collaborators);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur lors de la récupération des collaborateurs', 'error' => $e->getMessage()], 500);
+        }
+    }
+    
 }

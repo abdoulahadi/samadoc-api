@@ -8,6 +8,7 @@ use App\Models\Directory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\ShareResource;
+use App\Notifications\ShareCreatedNotification;
 
 class ShareController extends Controller {
     public function index() {
@@ -40,6 +41,11 @@ class ShareController extends Controller {
                 'recipient_id' => $request->recipient_id,
                 'accepted' => false,
             ]);
+            $recipient = $share->recipient;
+            $directory = $share->directory;
+
+            // Envoie de la notification
+            $recipient->notify(new ShareCreatedNotification($directory));
 
             return new ShareResource($share);
         } catch (\Exception $e) {
@@ -101,4 +107,17 @@ class ShareController extends Controller {
             return response()->json(['message' => 'Erreur lors de la récupération des partages en attente', 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function getUserNotifications()
+{
+    try {
+        $notifications = Auth::user()->notifications;
+
+        return response()->json($notifications);
+    } catch (\Exception $e) {
+        return response()->json(['message' => 'Erreur lors de la récupération des notifications', 'error' => $e->getMessage()], 500);
+    }
+}
+
+    
 }

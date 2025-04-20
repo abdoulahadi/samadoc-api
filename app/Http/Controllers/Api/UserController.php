@@ -144,5 +144,40 @@ class UserController extends Controller {
 
         return response()->json($users);
     }
+
+    public function forgottenPassword(Request $request) {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+    
+        $user = User::where('email', $request->email)->first();
+        $token = Str::random(60);
+        $user->update(['reset_token' => $token]);
+    
+        Mail::raw("Cliquez ici pour réinitialiser votre mot de passe : /reset-password/{$token}", function ($message) use ($user) {
+            $message->to($user->email)->subject('Réinitialisation du mot de passe');
+        });
+    
+        return response()->json(['message' => 'Un e-mail de réinitialisation a été envoyé.']);
+    }
+
+    public function resetPassword(Request $request) {
+        $request->validate([
+            'token' => 'required|string',
+            'password' => 'required|min:6|confirmed'
+        ]);
+    
+        $user = User::where('reset_token', $request->token)->first();
+        if (!$user) {
+            return response()->json(['message' => 'Token invalide ou expiré.'], 400);
+        }
+    
+        $user->update([
+            'password' => $request->password,
+            'reset_token' => null
+        ]);
+    
+        return response()->json(['message' => 'Mot de passe mis à jour avec succès.']);
+    }   
     
 }

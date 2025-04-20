@@ -131,4 +131,53 @@ class DocumentController extends Controller {
             return response()->json(['message' => 'Erreur lors de la récupération des vidéos', 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function findSomeDocuments() {
+        try {
+            $documents = Document::where('user_id', Auth::id())
+                ->latest()
+                ->limit(5)
+                ->get();
+    
+            return DocumentResource::collection($documents);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur lors de la récupération des documents', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function storeVideo(Request $request) {
+        try {
+            $request->validate([
+                'file' => 'required|file|mimes:mp4,mkv|max:20480',
+                'folder' => 'required|string',
+                'rep_id' => 'required|exists:directories,id',
+                'level' => 'nullable|string',
+                'description' => 'nullable|string',
+            ]);
+    
+            $directory = Directory::findOrFail($request->rep_id);
+    
+            if ($directory->user_id !== Auth::id()) {
+                return response()->json(['message' => 'Accès interdit'], 403);
+            }
+    
+            $filePath = $request->file('file')->store('videos', 'public');
+    
+            $document = Document::create([
+                'filename' => $request->file('file')->getClientOriginalName(),
+                'path' => $filePath,
+                'folder' => $request->folder,
+                'level' => $request->level,
+                'description' => $request->description,
+                'rep_id' => $request->rep_id,
+                'user_id' => Auth::id(),
+            ]);
+    
+            return new DocumentResource($document);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur lors de l\'upload vidéo', 'error' => $e->getMessage()], 500);
+        }
+    }
+    
+    
 }
